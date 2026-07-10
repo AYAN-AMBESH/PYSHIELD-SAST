@@ -1,0 +1,51 @@
+# PyShield-SAST: Python Static Application Security Testing Tool
+
+PyShield-SAST is a static analysis tool that parses Python source code into an Abstract Syntax Tree (AST) to identify security vulnerabilities. It features a modern, clean HTML report dashboard highlighting issues and recommended remediations.
+
+## Features
+
+- **AST-Based Vulnerability Scanning**: Inspects the structural grammar of Python code rather than running simple regular expressions, minimizing false positives.
+- **Offensive Security Rule Coverage**:
+  - **SEC101**: Hardcoded secrets, API keys, and passwords.
+  - **SEC102**: Weak cryptographic hashing (MD5, SHA1).
+  - **SEC103**: Command Injection patterns (`subprocess` with `shell=True`, dangerous `os.system` calls).
+  - **SEC104**: SQL Injection (dynamic string construction for SQL execution arguments).
+  - **SEC105**: Cross-Site Scripting / XSS (use of Flask's dynamic `render_template_string` or raw HTML bypasses).
+- **Interactive Report Dashboard**: Generates a responsive, CSS-styled HTML dashboard displaying statistics, code snippets, location mapping, and remediation steps.
+
+## Installation
+
+To install PyShield-SAST in development mode:
+
+```bash
+cd PyShield-SAST
+pip install -e .
+```
+
+## Usage
+
+### Scan a file or directory:
+```bash
+# Scan a single file and generate report.html
+pyshield tests/vulnerable_app.py --html report.html
+
+# Scan an entire directory
+pyshield /path/to/project --html report.html --json report.json
+```
+
+## Project Structure
+- `pyshield/`
+  - `rules/`
+    - `__init__.py`: Rule exporter
+    - `base.py`: Vulnerability & Rule abstractions
+    - `hardcoded_secrets.py`: Rule SEC101
+    - `weak_hash.py`: Rule SEC102
+    - `command_injection.py`: Rule SEC103
+    - `sql_injection.py`: Rule SEC104
+    - `xss_risk.py`: Rule SEC105
+  - `cli.py`: Console entry point & CLI parser
+  - `scanner.py`: File traversal and AST parsing engine
+  - `reporter.py`: HTML & CSS report rendering system
+- `tests/`
+  - `vulnerable_app.py`: Security baseline test suite
+- `setup.py`: Packaging metadata
