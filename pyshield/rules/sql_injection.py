@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class SqlInjectionRule(BaseRule):
-    rule_id = "SEC104"
+    rule_id = "OWASP_A03_2021_SQLI"
     title = "Potential SQL Injection"
     severity = Severity.HIGH
     description = "Dynamic SQL string construction using string formatting or concatenation rather than parameterized queries."

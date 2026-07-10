@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class InsecureSslTlsRule(BaseRule):
-    rule_id = "SEC108"
+    rule_id = "OWASP_A05_2021_SSL"
     title = "Insecure SSL/TLS Configuration"
     severity = Severity.HIGH
     description = "Disabling SSL/TLS certificate verification or using obsolete protocol versions (SSLv2, SSLv3, TLSv1, TLSv1.1) exposes connections to man-in-the-middle (MITM) attacks."

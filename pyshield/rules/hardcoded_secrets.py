@@ -3,7 +3,7 @@ import re
 from .base import BaseRule, Severity
 
 class HardcodedPasswordsRule(BaseRule):
-    rule_id = "SEC101"
+    rule_id = "OWASP_A07_2021_SECRET"
     title = "Hardcoded Password / Key Detected"
     severity = Severity.HIGH
     description = "A hardcoded password, API key, or token was identified in the source code."

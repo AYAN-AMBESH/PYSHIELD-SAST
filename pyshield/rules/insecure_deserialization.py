@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class InsecureDeserializationRule(BaseRule):
-    rule_id = "SEC106"
+    rule_id = "OWASP_A08_2021_DESERIAL"
     title = "Insecure Deserialization Detected"
     severity = Severity.CRITICAL
     description = "Use of unsafe deserialization libraries (pickle, marshal, shelve, or yaml.load) can lead to arbitrary code execution."

@@ -7,6 +7,12 @@ from .xss_risk import XssInsecureHttpResponseRule
 from .insecure_deserialization import InsecureDeserializationRule
 from .path_traversal import PathTraversalRule
 from .insecure_ssl import InsecureSslTlsRule
+from .dangerous_eval import DangerousEvalExecRule
+from .flask_debug import FlaskDebugModeRule
+from .ssrf import SsrfRequestRule
+from .assert_check import AssertSecurityCheckRule
+from .weak_cipher import WeakCipherRule
+from .weak_random import WeakRandomGeneratorRule
 
 
 # Export list of active rule instances
@@ -18,5 +24,11 @@ ALL_RULES = [
     XssInsecureHttpResponseRule(),
     InsecureDeserializationRule(),
     PathTraversalRule(),
-    InsecureSslTlsRule()
+    InsecureSslTlsRule(),
+    DangerousEvalExecRule(),
+    FlaskDebugModeRule(),
+    SsrfRequestRule(),
+    AssertSecurityCheckRule(),
+    WeakCipherRule(),
+    WeakRandomGeneratorRule()
 ]

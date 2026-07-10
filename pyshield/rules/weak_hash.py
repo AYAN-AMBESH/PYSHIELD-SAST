@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class WeakHashingCryptographyRule(BaseRule):
-    rule_id = "SEC102"
+    rule_id = "OWASP_A02_2021_HASH"
     title = "Use of Weak Cryptographic Hash Function"
     severity = Severity.MEDIUM
     description = "Use of broken or weak cryptographic algorithms (such as MD5 or SHA1) was detected."

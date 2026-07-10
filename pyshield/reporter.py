@@ -810,7 +810,7 @@ class ReportGenerator:
                     </div>
                     <div class="meta-row">
                         <span>Total Rules</span>
-                        <strong id="meta-total-rules">8</strong>
+                        <strong id="meta-total-rules">14</strong>
                     </div>
                 </div>
             </aside>
@@ -1087,14 +1087,20 @@ Remediation: ${{f.remediation}}`;
             }});
 
             const knownRules = [
-                {{ id: "SEC101", title: "Hardcoded Password / Key Detected" }},
-                {{ id: "SEC102", title: "Use of Weak Cryptographic Hash Function" }},
-                {{ id: "SEC103", title: "Potential Command Injection" }},
-                {{ id: "SEC104", title: "Potential SQL Injection" }},
-                {{ id: "SEC105", title: "Reflected XSS / Insecure HTTP Response" }},
-                {{ id: "SEC106", title: "Insecure Deserialization Detected" }},
-                {{ id: "SEC107", title: "Potential Path Traversal" }},
-                {{ id: "SEC108", title: "Insecure SSL/TLS Configuration" }}
+                {{ id: "OWASP_A01_2021_PATH", title: "Potential Path Traversal" }},
+                {{ id: "OWASP_A02_2021_HASH", title: "Use of Weak Cryptographic Hash Function" }},
+                {{ id: "OWASP_A02_2021_CIPHER", title: "Use of Weak Cryptographic Cipher" }},
+                {{ id: "OWASP_A03_2021_SQLI", title: "Potential SQL Injection" }},
+                {{ id: "OWASP_A03_2021_CMD", title: "Potential Command Injection" }},
+                {{ id: "OWASP_A03_2021_XSS", title: "Reflected XSS / Insecure HTTP Response" }},
+                {{ id: "OWASP_A03_2021_EVAL", title: "Dangerous Use of eval/exec" }},
+                {{ id: "OWASP_A04_2021_RANDOM", title: "Use of Weak Pseudo-Random Number Generator" }},
+                {{ id: "OWASP_A05_2021_SSL", title: "Insecure SSL/TLS Configuration" }},
+                {{ id: "OWASP_A05_2021_DEBUG", title: "Flask Debug Mode Enabled" }},
+                {{ id: "OWASP_A07_2021_SECRET", title: "Hardcoded Password / Key Detected" }},
+                {{ id: "OWASP_A07_2021_ASSERT", title: "Use of assert for Security Check" }},
+                {{ id: "OWASP_A08_2021_DESERIAL", title: "Insecure Deserialization Detected" }},
+                {{ id: "OWASP_A10_2021_SSRF", title: "Potential Server-Side Request Forgery" }}
             ];
 
             knownRules.forEach(rule => {{

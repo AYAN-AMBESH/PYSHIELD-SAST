@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class CommandInjectionRule(BaseRule):
-    rule_id = "SEC103"
+    rule_id = "OWASP_A03_2021_CMD"
     title = "Potential Command Injection"
     severity = Severity.HIGH
     description = "Use of os.system, subprocess.Popen, or subprocess.run with shell=True and dynamic variables can lead to Command Injection."

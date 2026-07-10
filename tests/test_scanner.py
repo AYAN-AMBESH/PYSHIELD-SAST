@@ -14,11 +14,16 @@ class TestPyShieldScanner(unittest.TestCase):
         findings = scanner.scan()
         
         # Verify total count
-        self.assertEqual(len(findings), 11, f"Expected 11 findings, got {len(findings)}")
+        self.assertEqual(len(findings), 20, f"Expected 20 findings, got {len(findings)}")
         
         # Collect rule IDs
         rule_ids = {vuln.rule_id for vuln in findings}
-        expected_rule_ids = {"SEC101", "SEC102", "SEC103", "SEC104", "SEC105", "SEC106", "SEC107", "SEC108"}
+        expected_rule_ids = {
+            "OWASP_A01_2021_PATH", "OWASP_A02_2021_HASH", "OWASP_A03_2021_SQLI",
+            "OWASP_A03_2021_CMD", "OWASP_A03_2021_XSS", "OWASP_A03_2021_EVAL",
+            "OWASP_A05_2021_SSL", "OWASP_A05_2021_DEBUG", "OWASP_A07_2021_SECRET",
+            "OWASP_A08_2021_DESERIAL", "OWASP_A10_2021_SSRF"
+        }
         
         # Check all expected rule IDs are detected
         for rid in expected_rule_ids:
@@ -28,7 +33,7 @@ class TestPyShieldScanner(unittest.TestCase):
         has_aws = False
         has_db_pass = False
         for vuln in findings:
-            if vuln.rule_id == "SEC101":
+            if vuln.rule_id == "OWASP_A07_2021_SECRET":
                 if "AWS" in vuln.description or "AWS" in vuln.code_snippet:
                     has_aws = True
                 if "DB_PASSWORD" in vuln.description or "DB_PASSWORD" in vuln.code_snippet:

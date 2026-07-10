@@ -64,3 +64,36 @@ def fetch_external_api(url):
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv3)
     return response.text
 
+def execute_dynamic_code(code_str):
+    # 9. Dangerous eval/exec (OWASP_A03_2021_EVAL)
+    eval(code_str)
+    exec(f"print({code_str})")
+
+def run_flask_app():
+    # 10. Flask Debug Mode Enabled (OWASP_A05_2021_DEBUG)
+    from flask import Flask
+    app = Flask(__name__)
+    app.run(debug=True)
+
+def fetch_user_avatar(avatar_url):
+    # 11. SSRF (OWASP_A10_2021_SSRF)
+    import requests
+    response = requests.get(avatar_url)
+    return response.content
+
+def check_admin_access(user):
+    # 12. Use of assert for security checks (OWASP_A07_2021_ASSERT)
+    assert user.is_admin, "User is not admin"
+    return True
+
+def encrypt_data(data):
+    # 13. Weak Cryptographic Cipher (OWASP_A02_2021_CIPHER)
+    from Crypto.Cipher import DES
+    cipher = DES.new(b'8bytekey', DES.MODE_ECB)
+    return cipher.encrypt(data)
+
+def generate_session_token():
+    # 14. Insecure random generator (OWASP_A04_2021_RANDOM)
+    import random
+    return str(random.randint(100000, 999999))
+

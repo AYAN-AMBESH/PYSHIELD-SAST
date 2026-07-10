@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class PathTraversalRule(BaseRule):
-    rule_id = "SEC107"
+    rule_id = "OWASP_A01_2021_PATH"
     title = "Potential Path Traversal"
     severity = Severity.HIGH
     description = "Use of raw concatenation or interpolation in file paths or using os.path.join with dynamic parameters without sanitization."

@@ -2,7 +2,7 @@ import ast
 from .base import BaseRule, Severity
 
 class XssInsecureHttpResponseRule(BaseRule):
-    rule_id = "SEC105"
+    rule_id = "OWASP_A03_2021_XSS"
     title = "Reflected XSS / Insecure HTTP Response"
     severity = Severity.HIGH
     description = "Returning unescaped user-controlled inputs or rendering templates with autoescape turned off."
