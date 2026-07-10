@@ -49,7 +49,12 @@ def main():
     # Generate HTML report if requested (default pyshield_report.html)
     if args.html:
         # Convert findings to dictionary list for report renderer
-        dict_findings = [vuln.to_dict() for vuln in findings]
+        dict_findings = []
+        for vuln in findings:
+            d = vuln.to_dict()
+            rel = os.path.relpath(vuln.file_path, target_path) if os.path.isdir(target_path) else os.path.basename(vuln.file_path)
+            d["relative_path"] = rel.replace("\\", "/")
+            dict_findings.append(d)
         ReportGenerator.render_html(dict_findings, target_path, args.html)
         print(f"HTML dashboard report written to: {args.html}")
 

@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyshield-sast"
+version = "1.1.0"
+authors = [
+    { name = "Gaurav Gogia" }
+]
+description = "A Python Static Application Security Testing (SAST) tool for finding vulnerabilities via AST."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.0.200",
+    "requests",
+    "pyyaml",
+    "flask"
+]
+
+[project.scripts]
+pyshield = "pyshield.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I"]

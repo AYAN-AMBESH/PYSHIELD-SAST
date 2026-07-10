@@ -18,8 +18,21 @@ PyShield-SAST is a static analysis tool that parses Python source code into an A
 To install PyShield-SAST in development mode:
 
 ```bash
-cd PyShield-SAST
+# Install package
 pip install -e .
+
+# Install development dependencies (pytest, ruff, etc.)
+pip install -e ".[dev]"
+# Or:
+pip install -r requirements-dev.txt
+```
+
+## Running Tests
+
+Verify the scanner works correctly using pytest:
+
+```bash
+pytest
 ```
 
 ## Usage
@@ -29,8 +42,8 @@ pip install -e .
 # Scan a single file and generate report.html
 pyshield tests/vulnerable_app.py --html report.html
 
-# Scan an entire directory
-pyshield /path/to/project --html report.html --json report.json
+# Scan an entire directory recursively
+pyshield tests --html report.html --json report.json
 ```
 
 ## Project Structure

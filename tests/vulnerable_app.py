@@ -38,3 +38,29 @@ def render_user_profile(user_data):
     from flask import render_template_string
     template = f"<h1>User profile for {user_data['name']}</h1><p>Bio: {user_data['bio']}</p>"
     return render_template_string(template)
+
+def load_data(serialized_data, yaml_data):
+    # 6. Insecure Deserialization (SEC106)
+    import pickle
+    import yaml
+    obj = pickle.loads(serialized_data)
+    config = yaml.load(yaml_data) # Unsafe load without SafeLoader
+    return obj, config
+
+def read_user_file(filename):
+    # 7. Path Traversal (SEC107)
+    base_dir = "/var/www/uploads/"
+    full_path = f"{base_dir}/{filename}"
+    with open(full_path, "r") as f:
+        return f.read()
+
+def fetch_external_api(url):
+    # 8. Insecure SSL/TLS (SEC108)
+    import requests
+    import ssl
+    # Disabling SSL verification
+    response = requests.get(url, verify=False)
+    # Using obsolete SSLv3 protocol
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv3)
+    return response.text
+

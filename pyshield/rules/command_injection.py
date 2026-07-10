@@ -25,10 +25,11 @@ class CommandInjectionRule(BaseRule):
 
                 # Case 1: os.system(...)
                 if module_name == "os" and func_name == "system":
-                    # Check if arg is a string literal (safer) or dynamic (dangerous)
                     is_dynamic = True
-                    if node.args and isinstance(node.args[0], ast.Constant):
-                        is_dynamic = False
+                    if node.args:
+                        resolved = self.resolve_node_value(node.args[0])
+                        if isinstance(resolved, ast.Constant):
+                            is_dynamic = False
                     
                     self.add_vuln(
                         file_path=file_path,

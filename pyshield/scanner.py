@@ -37,6 +37,9 @@ class Scanner:
         """
         Scan a single python file.
         """
+        rel_path = os.path.relpath(file_path, self.target_dir) if os.path.isdir(self.target_dir) else os.path.basename(file_path)
+        rel_path_clean = rel_path.replace('\\', '/')
+        print(f"  Scanning: {rel_path_clean}")
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
@@ -60,10 +63,17 @@ class Scanner:
                 pass
 
     def generate_json_report(self, output_path: str):
+        findings_list = []
+        for vuln in self.results:
+            d = vuln.to_dict()
+            rel = os.path.relpath(vuln.file_path, self.target_dir) if os.path.isdir(self.target_dir) else os.path.basename(vuln.file_path)
+            d["relative_path"] = rel.replace("\\", "/")
+            findings_list.append(d)
+
         report_data = {
             "target_directory": self.target_dir,
             "total_vulnerabilities": len(self.results),
-            "findings": [vuln.to_dict() for vuln in self.results]
+            "findings": findings_list
         }
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(report_data, f, indent=4)
