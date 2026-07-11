@@ -23,6 +23,33 @@ def main() -> None:
         help="Path to output HTML dashboard report",
         default="sapyscan_report.html"
     )
+    parser.add_argument(
+        "--sarif",
+        help="Path to output SARIF format report",
+        default=None
+    )
+    parser.add_argument(
+        "--parallel",
+        help="Run file scans in parallel using multiprocessing",
+        action="store_true"
+    )
+    parser.add_argument(
+        "--min-severity",
+        help="Filter findings by minimum severity level (INFO, LOW, MEDIUM, HIGH, CRITICAL)",
+        choices=["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+        default="INFO"
+    )
+    parser.add_argument(
+        "--exclude",
+        help="Custom directories to exclude from the scan (can be specified multiple times)",
+        action="append",
+        default=[]
+    )
+    parser.add_argument(
+        "--autofix",
+        help="Automatically fix supported vulnerabilities in-place",
+        action="store_true"
+    )
 
     args = parser.parse_args()
 
@@ -37,15 +64,34 @@ def main() -> None:
     print(f"Target: {target_path}")
     print("Scanning code modules for vulnerabilities...")
 
-    scanner = Scanner(target_path)
-    findings = scanner.scan()
+    scanner = Scanner(target_path, ignored_dirs=args.exclude)
+    findings = scanner.scan(parallel=args.parallel)
 
-    print(f"Scan complete. Found {len(findings)} potential vulnerability findings.")
+    # Filter findings by minimum severity
+    if args.min_severity != "INFO":
+        severity_ranks = {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+        target_rank = severity_ranks.get(args.min_severity.upper(), 0)
+        findings = [
+            f for f in findings
+            if severity_ranks.get(str(f.severity).upper(), 0) >= target_rank
+        ]
+
+    print(f"Scan complete. Found {len(findings)} potential vulnerability findings matching severity >= {args.min_severity}.")
+
+    # Apply autofix if requested
+    if args.autofix:
+        fixed_count = scanner.autofix_files(findings)
+        print(f"Autofix: successfully fixed {fixed_count} vulnerabilities in-place.")
 
     # Generate JSON report if requested
     if args.json:
         scanner.generate_json_report(args.json)
         print(f"JSON report written to: {args.json}")
+
+    # Generate SARIF report if requested
+    if args.sarif:
+        scanner.generate_sarif_report(args.sarif)
+        print(f"SARIF report written to: {args.sarif}")
 
     # Generate HTML report if requested (default sapyscan_report.html)
     if args.html:

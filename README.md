@@ -5,6 +5,8 @@ SaPyScan is a static analysis tool that parses Python source code into an Abstra
 ## Features
 
 - **AST-Based Vulnerability Scanning**: Tracks user-controlled values through local assignments, scanned-module imports, and instance methods before reporting an injection sink.
+- **Sanitizer & Escaper Detection**: Automatically stops taint propagation through standard escaping/sanitization functions (like `html.escape()`, `shlex.quote()`, `int()`, `float()`), significantly reducing false positives.
+- **High-Performance Scaling**: Optimized AST traversing with cached parent-node mapping and call graphs. Supports multiprocessing for scanning massive codebases in seconds.
 - **Security Rule Coverage**:
   - Hardcoded secrets and credentials
   - Weak cryptographic hashes and ciphers
@@ -44,6 +46,35 @@ sapyscan tests/vulnerable_app.py --html report.html
 
 # Scan an entire directory recursively
 sapyscan tests --html report.html --json report.json
+
+# Speed up scanning of large codebases using multiprocessing
+sapyscan my_big_project --html report.html --parallel
+
+# Exclude specific directories (e.g. tests or migrations)
+sapyscan my_big_project --exclude tests --exclude migrations --html report.html
+
+# Filter findings by a minimum severity level
+sapyscan my_big_project --min-severity HIGH --html report.html
+
+# Generate a SARIF report for CI/CD or PR integrations
+sapyscan my_big_project --sarif report.sarif
+
+# Automatically fix SQL injections in-place (autofix)
+sapyscan my_big_project --autofix
+```
+
+### Inline Suppression
+
+You can ignore specific vulnerability findings on a per-line basis using code comments:
+
+- `# nosec` (universal suppression - matches Bandit syntax)
+- `# sapyscan: ignore` (universal suppression)
+- `# sapyscan: ignore <rule_id>` (suppress specific rule, e.g. `OWASP_A03_2021_SQLI`)
+
+Example:
+```python
+eval(user_input) # nosec
+query = f"SELECT * FROM users WHERE id = '{user_id}'" # sapyscan: ignore OWASP_A03_2021_SQLI
 ```
 
 ## Project Structure
