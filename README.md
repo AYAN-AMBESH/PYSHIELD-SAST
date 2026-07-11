@@ -1,21 +1,21 @@
-# PyShield-SAST: Python Static Application Security Testing Tool
+# SaPyScan: Python Static Application Security Testing Tool
 
-PyShield-SAST is a static analysis tool that parses Python source code into an Abstract Syntax Tree (AST) to identify security vulnerabilities. It features a modern, clean HTML report dashboard highlighting issues and recommended remediations.
+SaPyScan is a static analysis tool that parses Python source code into an Abstract Syntax Tree (AST) to identify security vulnerabilities. It includes a modern HTML report dashboard with issue details and remediation guidance.
 
 ## Features
 
 - **AST-Based Vulnerability Scanning**: Tracks user-controlled values through local assignments, scanned-module imports, and instance methods before reporting an injection sink.
-- **Offensive Security Rule Coverage**:
-  - **SEC101**: Hardcoded secrets, API keys, and passwords.
-  - **SEC102**: Weak cryptographic hashing (MD5, SHA1).
-  - **SEC103**: Command Injection patterns (`subprocess` with `shell=True`, dangerous `os.system` calls).
-  - **SEC104**: SQL Injection (dynamic string construction for SQL execution arguments).
-  - **SEC105**: Cross-Site Scripting / XSS (use of Flask's dynamic `render_template_string` or raw HTML bypasses).
+- **Security Rule Coverage**:
+  - Hardcoded secrets and credentials
+  - Weak cryptographic hashes and ciphers
+  - Command injection, SQL injection, and XSS risk patterns
+  - Insecure deserialization and SSL/TLS misconfiguration
+  - SSRF risk, path traversal risk, weak random usage, and dangerous eval usage
 - **Interactive Report Dashboard**: Generates a responsive, CSS-styled HTML dashboard displaying statistics, code snippets, location mapping, and remediation steps.
 
 ## Installation
 
-To install PyShield-SAST in development mode:
+Install SaPyScan in development mode:
 
 ```bash
 # Install package
@@ -40,25 +40,31 @@ pytest
 ### Scan a file or directory:
 ```bash
 # Scan a single file and generate report.html
-pyshield tests/vulnerable_app.py --html report.html
+sapyscan tests/vulnerable_app.py --html report.html
 
 # Scan an entire directory recursively
-pyshield tests --html report.html --json report.json
+sapyscan tests --html report.html --json report.json
 ```
 
 ## Project Structure
-- `pyshield/`
-  - `rules/`
-    - `__init__.py`: Rule exporter
-    - `base.py`: Vulnerability & Rule abstractions
-    - `hardcoded_secrets.py`: Rule SEC101
-    - `weak_hash.py`: Rule SEC102
-    - `command_injection.py`: Rule SEC103
-    - `sql_injection.py`: Rule SEC104
-    - `xss_risk.py`: Rule SEC105
-  - `cli.py`: Console entry point & CLI parser
+- `sapyscan/`: Main package
+  - `cli.py`: CLI entry point and argument parsing
   - `scanner.py`: File traversal and AST parsing engine
-  - `reporter.py`: HTML & CSS report rendering system
-- `tests/`
-  - `vulnerable_app.py`: Security baseline test suite
-- `setup.py`: Packaging metadata
+  - `reporter.py`: HTML report rendering
+  - `rules/`: Security rule implementations
+    - `hardcoded_secrets.py`
+    - `weak_hash.py`
+    - `weak_cipher.py`
+    - `command_injection.py`
+    - `sql_injection.py`
+    - `xss_risk.py`
+    - `dangerous_eval.py`
+    - `insecure_deserialization.py`
+    - `insecure_ssl.py`
+    - `ssrf.py`
+    - `path_traversal.py`
+    - `weak_random.py`
+    - `assert_check.py`
+    - `flask_debug.py`
+- `tests/`: Unit tests and vulnerable sample application
+- `pyproject.toml`: Project metadata and console script configuration

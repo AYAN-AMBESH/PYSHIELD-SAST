@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pyshield.scanner import Scanner
+from sapyscan.scanner import Scanner
 
 
 def test_injection_rules_require_tainted_data(tmp_path: Path) -> None:

@@ -2,12 +2,12 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from pyshield.scanner import Scanner
-from pyshield.reporter import ReportGenerator
+from sapyscan.scanner import Scanner
+from sapyscan.reporter import ReportGenerator
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="PyShield-SAST: A lightweight static application security testing (SAST) tool for Python."
+        description="SaPyScan: A lightweight static application security testing (SAST) tool for Python."
     )
     parser.add_argument(
         "target",
@@ -21,7 +21,7 @@ def main() -> None:
     parser.add_argument(
         "--html",
         help="Path to output HTML dashboard report",
-        default="pyshield_report.html"
+        default="sapyscan_report.html"
     )
 
     args = parser.parse_args()
@@ -32,7 +32,7 @@ def main() -> None:
         sys.exit(1)
 
     print("=" * 60)
-    print("      PyShield-SAST: Static Security Code Analyzer")
+    print("      SaPyScan: Static Security Code Analyzer")
     print("=" * 60)
     print(f"Target: {target_path}")
     print("Scanning code modules for vulnerabilities...")
@@ -47,7 +47,7 @@ def main() -> None:
         scanner.generate_json_report(args.json)
         print(f"JSON report written to: {args.json}")
 
-    # Generate HTML report if requested (default pyshield_report.html)
+    # Generate HTML report if requested (default sapyscan_report.html)
     if args.html:
         # Convert findings to dictionary list for report renderer
         dict_findings = []

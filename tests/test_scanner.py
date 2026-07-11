@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from pyshield.scanner import Scanner
+from sapyscan.scanner import Scanner
 
 def test_scanner_findings() -> None:
     # Locate the vulnerable test app

@@ -13,7 +13,7 @@ class ReportGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyShield-SAST Security Vulnerability Report</title>
+    <title>SaPyScan Security Vulnerability Report</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
@@ -748,7 +748,7 @@ class ReportGenerator:
             <div class="logo-section">
                 <span class="logo-shield">🛡️</span>
                 <div class="logo-text">
-                    <h1>PyShield SAST</h1>
+                    <h1>SaPyScan</h1>
                     <span class="logo-sub">Static Application Security Testing</span>
                 </div>
             </div>
