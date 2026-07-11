@@ -17,17 +17,13 @@ class DangerousEvalExecRule(BaseRule):
                 
                 if func_name in {"eval", "exec"}:
                     if node.args:
-                        resolved = self.resolve_node_value(node.args[0])
-                        is_dynamic = self.is_dynamic_expression(resolved)
-                        
-                        detail_msg = f"Use of '{func_name}()' detected. If inputs are user-controlled, this allows remote code execution."
-                        if is_dynamic:
-                            detail_msg = f"Dangerous '{func_name}()' call detected with dynamic string expression."
-                            
-                        self.add_vuln(
-                            file_path=file_path,
-                            line_no=node.lineno,
-                            col_offset=node.col_offset,
-                            file_content=file_content,
-                            detail=detail_msg
-                        )
+                        trace = self.build_taint_trace(node.args[0])
+                        if trace.tainted:
+                            self.add_tainted_vuln(
+                                file_path=file_path,
+                                line_no=node.lineno,
+                                col_offset=node.col_offset,
+                                file_content=file_content,
+                                trace=trace,
+                                detail=f"Dangerous '{func_name}()' call detected with user-controlled input."
+                            )

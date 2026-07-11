@@ -20,26 +20,32 @@ class XssInsecureHttpResponseRule(BaseRule):
 
                 if func_name == "render_template_string":
                     # Rendering templates from dynamic strings is a huge XSS risk
-                    self.add_vuln(
-                        file_path=file_path,
-                        line_no=node.lineno,
-                        col_offset=node.col_offset,
-                        file_content=file_content,
-                        detail="Use of Flask's 'render_template_string' detected. This is a severe XSS risk if user inputs are concatenated directly into the template string."
-                    )
+                    if node.args:
+                        trace = self.build_taint_trace(node.args[0])
+                        if trace.tainted:
+                            self.add_tainted_vuln(
+                            file_path=file_path,
+                            line_no=node.lineno,
+                            col_offset=node.col_offset,
+                            file_content=file_content,
+                            trace=trace,
+                            detail="Flask template rendering receives user-controlled content."
+                        )
                 
                 # Flag Markup(html) with string formatting or concatenation (unsafe bypasses)
                 elif func_name == "Markup":
                     is_unsafe = False
                     if node.args:
                         first_arg = node.args[0]
-                        if isinstance(first_arg, (ast.JoinedStr, ast.BinOp)):
+                        trace = self.build_taint_trace(first_arg)
+                        if trace.tainted:
                             is_unsafe = True
                     if is_unsafe:
-                        self.add_vuln(
+                        self.add_tainted_vuln(
                             file_path=file_path,
                             line_no=node.lineno,
                             col_offset=node.col_offset,
                             file_content=file_content,
+                            trace=trace,
                             detail="Bypassing safety checks using 'Markup()' with dynamically formatted inputs can introduce Cross-Site Scripting (XSS)."
                         )

@@ -370,6 +370,30 @@ class ReportGenerator:
             font-family: 'JetBrains Mono', monospace;
         }}
 
+        .assessment-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .assessment-badge.confirmed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-info);
+            border-color: rgba(16, 185, 129, 0.18);
+        }
+
+        .assessment-badge.needs_review {
+            background: rgba(234, 179, 8, 0.1);
+            color: var(--color-medium);
+            border-color: rgba(234, 179, 8, 0.18);
+        }
+
         .header-right {{
             display: flex;
             align-items: center;
@@ -407,6 +431,37 @@ class ReportGenerator:
             color: var(--text-secondary);
             margin: 16px 0;
         }}
+
+        .flow-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+
+        .flow-box h5 {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .flow-box ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .flow-box li {
+            font-size: 13px;
+            color: #dbe4f0;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.45;
+        }
 
         /* Code box */
         .code-box {{
@@ -977,6 +1032,14 @@ class ReportGenerator:
             filtered.forEach((f, idx) => {{
                 const escapedSnippet = f.code_snippet ? f.code_snippet.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : '';
                 const codeHtml = escapedSnippet ? `<div class="code-box"><pre><code>${{escapedSnippet}}</code></pre></div>` : '';
+                const flowItems = Array.isArray(f.data_flow) ? f.data_flow : [];
+                const flowHtml = flowItems.length ? `
+                    <div class="flow-box">
+                        <h5>Data Flow</h5>
+                        <ul>${{flowItems.map(step => `<li>${{step}}</li>`).join('')}}</ul>
+                    </div>
+                ` : '';
+                const assessment = (f.assessment || 'needs_review').toLowerCase();
                 
                 const displayPath = f.relative_path || f.file_path.replace(/\\\\/g, '/').split('/').pop();
                 
@@ -992,12 +1055,14 @@ class ReportGenerator:
                             </div>
                         </div>
                         <div class="header-right">
+                            <span class="assessment-badge ${{assessment}}">${{assessment.replace(/_/g, ' ')}}</span>
                             <span class="severity-badge ${{f.severity.toLowerCase()}}">${{f.severity}}</span>
                             <span class="collapse-icon" id="collapse-icon-${{idx}}">▼</span>
                         </div>
                     </div>
                     <div class="finding-body">
                         <div class="description">${{f.description}}</div>
+                        ${{flowHtml}}
                         ${{codeHtml}}
                         <div class="remediation-box collapsed" id="remediation-${{idx}}">
                             <div class="remediation-header">
@@ -1028,10 +1093,14 @@ class ReportGenerator:
             event.stopPropagation();
             const filtered = getFilteredFindings();
             const f = filtered[idx];
+            const flow = Array.isArray(f.data_flow) && f.data_flow.length ? `
+Data Flow:
+- ${{f.data_flow.join('\n- ')}}` : '';
             const text = `Vulnerability: ${{f.title}} (${{f.rule_id}})
 Severity: ${{f.severity}}
 Location: ${{f.file_path}}:${{f.line_no}}
 Description: ${{f.description}}
+Assessment: ${{f.assessment || 'needs_review'}}${{flow}}
 Remediation: ${{f.remediation}}`;
 
             navigator.clipboard.writeText(text).then(() => {{

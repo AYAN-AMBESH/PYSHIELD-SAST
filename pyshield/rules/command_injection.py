@@ -25,19 +25,17 @@ class CommandInjectionRule(BaseRule):
 
                 # Case 1: os.system(...)
                 if module_name == "os" and func_name == "system":
-                    is_dynamic = True
                     if node.args:
-                        resolved = self.resolve_node_value(node.args[0])
-                        if isinstance(resolved, ast.Constant):
-                            is_dynamic = False
-                    
-                    self.add_vuln(
-                        file_path=file_path,
-                        line_no=node.lineno,
-                        col_offset=node.col_offset,
-                        file_content=file_content,
-                        detail=f"Use of 'os.system()' is discouraged. Criticality: " + ("High (dynamic command execution)" if is_dynamic else "Medium (hardcoded command)")
-                    )
+                        trace = self.build_taint_trace(node.args[0])
+                        if trace.tainted:
+                            self.add_tainted_vuln(
+                            file_path=file_path,
+                            line_no=node.lineno,
+                            col_offset=node.col_offset,
+                            file_content=file_content,
+                            trace=trace,
+                            detail="Use of 'os.system()' with user-controlled input can lead to command injection."
+                        )
 
                 # Case 2: subprocess calls with shell=True
                 elif module_name == "subprocess" or func_name in self.DANGEROUS_FUNCTIONS:
@@ -48,11 +46,14 @@ class CommandInjectionRule(BaseRule):
                             if isinstance(kw.value, ast.Constant) and kw.value.value is True:
                                 has_shell_true = True
                     
-                    if has_shell_true:
-                        self.add_vuln(
-                            file_path=file_path,
-                            line_no=node.lineno,
-                            col_offset=node.col_offset,
-                            file_content=file_content,
-                            detail="subprocess call detected with 'shell=True'. This is a high-risk vector for command injection."
-                        )
+                    if has_shell_true and node.args:
+                        trace = self.build_taint_trace(node.args[0])
+                        if trace.tainted:
+                            self.add_tainted_vuln(
+                                file_path=file_path,
+                                line_no=node.lineno,
+                                col_offset=node.col_offset,
+                                file_content=file_content,
+                                trace=trace,
+                                detail="subprocess call detected with 'shell=True'. This is a high-risk vector for command injection."
+                            )

@@ -26,27 +26,37 @@ class SqlInjectionRule(BaseRule):
                         
                         is_unsafe = False
                         detail_msg = ""
+                        trace = self.build_taint_trace(first_arg)
                         
-                        if isinstance(resolved, ast.JoinedStr):
+                        if isinstance(resolved, ast.JoinedStr) and trace.tainted:
                             is_unsafe = True
                             detail_msg = "SQL query constructed dynamically using f-string formatting."
-                        elif isinstance(resolved, ast.BinOp) and isinstance(resolved.op, ast.Mod):
+                        elif (
+                            isinstance(resolved, ast.BinOp)
+                            and isinstance(resolved.op, ast.Mod)
+                            and trace.tainted
+                        ):
                             is_unsafe = True
                             detail_msg = "SQL query constructed dynamically using '%' operator interpolation."
                         elif isinstance(resolved, ast.BinOp) and isinstance(resolved.op, ast.Add):
-                            if self.is_dynamic_expression(resolved):
+                            if trace.tainted:
                                 is_unsafe = True
                                 detail_msg = "SQL query constructed dynamically using string concatenation (+)."
                         elif isinstance(resolved, ast.Call):
-                            if isinstance(resolved.func, ast.Attribute) and resolved.func.attr == "format":
+                            if (
+                                isinstance(resolved.func, ast.Attribute)
+                                and resolved.func.attr == "format"
+                                and trace.tainted
+                            ):
                                 is_unsafe = True
                                 detail_msg = "SQL query constructed dynamically using '.format()' method."
                         
                         if is_unsafe:
-                            self.add_vuln(
+                            self.add_tainted_vuln(
                                 file_path=file_path,
                                 line_no=node.lineno,
                                 col_offset=node.col_offset,
                                 file_content=file_content,
+                                trace=trace,
                                 detail=detail_msg
                             )

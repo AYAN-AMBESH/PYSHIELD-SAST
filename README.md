@@ -4,7 +4,7 @@ PyShield-SAST is a static analysis tool that parses Python source code into an A
 
 ## Features
 
-- **AST-Based Vulnerability Scanning**: Inspects the structural grammar of Python code rather than running simple regular expressions, minimizing false positives.
+- **AST-Based Vulnerability Scanning**: Tracks user-controlled values through local assignments, scanned-module imports, and instance methods before reporting an injection sink.
 - **Offensive Security Rule Coverage**:
   - **SEC101**: Hardcoded secrets, API keys, and passwords.
   - **SEC102**: Weak cryptographic hashing (MD5, SHA1).

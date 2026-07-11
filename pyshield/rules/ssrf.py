@@ -33,13 +33,13 @@ class SsrfRequestRule(BaseRule):
                         
                     if is_http_call and node.args:
                         first_arg = node.args[0]
-                        resolved = self.resolve_node_value(first_arg)
-                        
-                        if self.is_dynamic_expression(resolved):
-                            self.add_vuln(
+                        trace = self.build_taint_trace(first_arg)
+                        if trace.tainted:
+                            self.add_tainted_vuln(
                                 file_path=file_path,
                                 line_no=node.lineno,
                                 col_offset=node.col_offset,
                                 file_content=file_content,
+                                trace=trace,
                                 detail="HTTP request destination URL is constructed dynamically, presenting a potential SSRF risk."
                             )

@@ -1,10 +1,11 @@
-import os
+from __future__ import annotations
 import argparse
 import sys
+from pathlib import Path
 from pyshield.scanner import Scanner
 from pyshield.reporter import ReportGenerator
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="PyShield-SAST: A lightweight static application security testing (SAST) tool for Python."
     )
@@ -25,8 +26,8 @@ def main():
 
     args = parser.parse_args()
 
-    target_path = os.path.abspath(args.target)
-    if not os.path.exists(target_path):
+    target_path = Path(args.target).resolve()
+    if not target_path.exists():
         print(f"Error: Target path '{target_path}' does not exist.")
         sys.exit(1)
 
@@ -52,13 +53,18 @@ def main():
         dict_findings = []
         for vuln in findings:
             d = vuln.to_dict()
-            rel = os.path.relpath(vuln.file_path, target_path) if os.path.isdir(target_path) else os.path.basename(vuln.file_path)
-            d["relative_path"] = rel.replace("\\", "/")
+            vuln_path = Path(vuln.file_path)
+            if target_path.is_dir():
+                rel = vuln_path.relative_to(target_path)
+            else:
+                rel = vuln_path.name
+            d["relative_path"] = str(rel).replace("\\", "/")
             dict_findings.append(d)
-        ReportGenerator.render_html(dict_findings, target_path, args.html)
+        ReportGenerator.render_html(dict_findings, str(target_path), args.html)
         print(f"HTML dashboard report written to: {args.html}")
 
     print("=" * 60)
 
 if __name__ == "__main__":
     main()
+
