@@ -288,5 +288,61 @@ def run_unsafe_var(cursor):
     assert 20 in lines
 
 
+def test_relative_import_taint_tracking(tmp_path: Path) -> None:
+    pkg = tmp_path / "pkg"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+    
+    (pkg / "helpers.py").write_text(
+        """
+def execute_query(cursor, username):
+    query = f"SELECT * FROM accounts WHERE username = '{username}'"
+    cursor.execute(query)
+""",
+        encoding="utf-8"
+    )
+    
+    (pkg / "app.py").write_text(
+        """
+from . import helpers
+
+def run(cursor):
+    helpers.execute_query(cursor, input("Username: "))
+""",
+        encoding="utf-8"
+    )
+    
+    findings = Scanner(pkg).scan()
+    assert len(findings) == 1
+    assert findings[0].rule_id == "OWASP_A03_2021_SQLI"
+
+
+def test_parameter_method_call_taint_tracking(tmp_path: Path) -> None:
+    target = tmp_path / "app.py"
+    target.write_text(
+        """
+class Database:
+    def __init__(self, cursor):
+        self.cursor = cursor
+        
+    def execute(self, q):
+        query = f"SELECT * FROM users WHERE name = '{q}'"
+        self.cursor.execute(query)
+
+def run_query(db_conn, user_input):
+    db_conn.execute(user_input)
+
+def app(cursor):
+    db = Database(cursor)
+    run_query(db, input("SQL: "))
+""",
+        encoding="utf-8"
+    )
+    
+    findings = Scanner(target).scan()
+    assert len(findings) == 1
+    assert findings[0].rule_id == "OWASP_A03_2021_SQLI"
+
+
 
 

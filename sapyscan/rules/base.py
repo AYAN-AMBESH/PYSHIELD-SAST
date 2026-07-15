@@ -11,6 +11,9 @@ class Severity(str, Enum):
     LOW = "LOW"
     INFO = "INFO"
 
+    def __str__(self) -> str:
+        return self.value
+
 @dataclass(frozen=True)
 class Vulnerability:
     rule_id: str
@@ -428,14 +431,28 @@ class BaseRule:
     def get_function_calls(self, function: ast.FunctionDef | ast.AsyncFunctionDef) -> list[ast.Call]:
         if self.call_graph is None:
             self.call_graph = {}
+            # Pass 1: Resolve simple calls (by Name) first to bootstrap the call graph
+            calls_to_resolve_later = []
             for tree in self.module_trees.values():
                 for node in ast.walk(tree):
                     if isinstance(node, ast.Call):
-                        called = self.get_called_function(node)
-                        if called is not None:
-                            if called not in self.call_graph:
-                                self.call_graph[called] = []
-                            self.call_graph[called].append(node)
+                        if isinstance(node.func, ast.Name):
+                            called = self.get_called_function(node)
+                            if called is not None:
+                                if called not in self.call_graph:
+                                    self.call_graph[called] = []
+                                self.call_graph[called].append(node)
+                        else:
+                            calls_to_resolve_later.append(node)
+
+            # Pass 2: Resolve attribute calls which might depend on parameter type inference
+            for node in calls_to_resolve_later:
+                called = self.get_called_function(node)
+                if called is not None:
+                    if called not in self.call_graph:
+                        self.call_graph[called] = []
+                    self.call_graph[called].append(node)
+
         return self.call_graph.get(function, [])
 
     def get_call_argument(
@@ -490,7 +507,7 @@ class BaseRule:
         # Check if function is a web route/handler
         is_web_handler = False
         if hasattr(function, "decorator_list") and function.decorator_list:
-            route_keywords = {"route", "get", "post", "put", "delete", "patch", "options", "head", "websocket"}
+            route_keywords = {"route", "get", "post", "put", "delete", "patch", "options", "head", "websocket", "whitelist"}
             for dec in function.decorator_list:
                 dec_func = dec.func if isinstance(dec, ast.Call) else dec
                 dec_name = ""
@@ -584,11 +601,16 @@ class BaseRule:
         self, tree: ast.Module, name: str
     ) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
         for statement in tree.body:
-            if isinstance(statement, ast.ImportFrom) and statement.module:
+            if isinstance(statement, ast.ImportFrom):
                 for alias in statement.names:
                     if (alias.asname or alias.name) == name:
-                        module = self.resolve_module(tree, statement.module, statement.level)
+                        mod_name = statement.module or ""
+                        if not mod_name and statement.level > 0:
+                            mod_name = alias.name
+                        module = self.resolve_module(tree, mod_name, statement.level)
                         if module:
+                            if not statement.module and statement.level > 0:
+                                return self.find_function(module, name) or self.find_function(module, alias.name)
                             return self.find_function(module, alias.name)
         return None
 
@@ -617,17 +639,20 @@ class BaseRule:
                         full_mod_name = f"{alias.name}.{suffix}"
                         if full_mod_name in self.module_trees:
                             return self.module_trees.get(full_mod_name)
-            elif isinstance(statement, ast.ImportFrom) and statement.module:
+            elif isinstance(statement, ast.ImportFrom):
+                mod_name = statement.module or ""
                 for alias in statement.names:
                     import_name = alias.asname or alias.name
                     if chain == import_name:
+                        target_mod = f"{mod_name}.{alias.name}" if mod_name else alias.name
                         return self.resolve_module(
-                            tree, f"{statement.module}.{alias.name}", statement.level
+                            tree, target_mod, statement.level
                         )
                     if chain.startswith(import_name + "."):
                         suffix = chain[len(import_name)+1:]
+                        target_mod = f"{mod_name}.{alias.name}.{suffix}" if mod_name else f"{alias.name}.{suffix}"
                         return self.resolve_module(
-                            tree, f"{statement.module}.{alias.name}.{suffix}", statement.level
+                            tree, target_mod, statement.level
                         )
         return None
 
@@ -640,6 +665,21 @@ class BaseRule:
         definition = None
         if isinstance(value, ast.Name):
             definition = self.get_variable_definition(value, value.id)
+            if definition is None:
+                enclosing_func = self.get_enclosing_function(value)
+                if enclosing_func:
+                    params = self.get_function_parameters(enclosing_func)
+                    try:
+                        param_idx = next(i for i, p in enumerate(params) if p.arg == value.id)
+                        calls = self.get_function_calls(enclosing_func)
+                        for call in calls:
+                            arg = self.get_call_argument(call, params, param_idx)
+                            if arg:
+                                arg_class = self.get_receiver_class(self.get_tree(call), arg)
+                                if arg_class:
+                                    return arg_class
+                    except StopIteration:
+                        pass
         if isinstance(definition, ast.Call):
             return self.get_constructor_class(tree, definition.func)
         return self.find_class(tree, chain) or self.find_imported_class(tree, chain)
@@ -655,11 +695,16 @@ class BaseRule:
 
     def find_imported_class(self, tree: ast.Module, name: str) -> ast.ClassDef | None:
         for statement in tree.body:
-            if isinstance(statement, ast.ImportFrom) and statement.module:
+            if isinstance(statement, ast.ImportFrom):
                 for alias in statement.names:
                     if (alias.asname or alias.name) == name:
-                        module = self.resolve_module(tree, statement.module, statement.level)
+                        mod_name = statement.module or ""
+                        if not mod_name and statement.level > 0:
+                            mod_name = alias.name
+                        module = self.resolve_module(tree, mod_name, statement.level)
                         if module:
+                            if not statement.module and statement.level > 0:
+                                return self.find_class(module, name) or self.find_class(module, alias.name)
                             return self.find_class(module, alias.name)
         return None
 
@@ -667,8 +712,11 @@ class BaseRule:
         if level:
             current_module = self.tree_modules.get(tree, "")
             package = current_module.split(".")[:-1]
-            module = ".".join([*package[: len(package) - level + 1], module])
-            return self.module_trees.get(module)
+            target_parts = package[: len(package) - level + 1]
+            if module:
+                target_parts.append(module)
+            resolved_mod_name = ".".join(target_parts)
+            return self.module_trees.get(resolved_mod_name)
             
         res = self.module_trees.get(module)
         if res is not None:
@@ -748,11 +796,14 @@ class BaseRule:
             # Flask/FastAPI request.args, request.form, request.json, request.query_params
             if len(parts) >= 2 and parts[0] in {"request", "req"} and parts[1] in {"args", "form", "json", "query_params", "cookies", "headers", "files", "values", "data"}:
                 return True
+            # Frappe form_dict / frappe.form_dict
+            if len(parts) >= 1 and parts[-1] == "form_dict":
+                return True
                 
         if isinstance(node, ast.Name):
             return node.id in {"request", "req", "payload", "event", "params"}
         if isinstance(node, ast.Attribute):
-            if node.attr in {"request", "req", "query_params", "form", "args"}:
+            if node.attr in {"request", "req", "query_params", "form", "args", "form_dict"}:
                 return True
             if isinstance(node.value, ast.Name):
                 return node.value.id in {"request", "req", "payload", "event"} or (node.value.id, node.attr) in {

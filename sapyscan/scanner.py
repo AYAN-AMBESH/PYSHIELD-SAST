@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 from .rules import ALL_RULES, Vulnerability
+from .config import find_config, load_config
 
 # Multiprocessing globals and initializer/worker for parallel scanning of large codebases
 _worker_module_trees = None
@@ -69,12 +70,27 @@ def _worker_scan_file(file_path: Path) -> list[Vulnerability]:
 class Scanner:
     def __init__(self, target_dir: str | Path, ignored_dirs: list[str] | None = None) -> None:
         self.target_dir = Path(target_dir).resolve()
-        self.rules = ALL_RULES
         self.results: list[Vulnerability] = []
         self.module_trees: dict[str, ast.Module] = {}
         self.ignored_parts = {".git", ".venv", "venv", "__pycache__", ".egg-info", "build", "dist"}
         if ignored_dirs:
             self.ignored_parts.update(ignored_dirs)
+
+        # Load configuration
+        config_path = find_config(self.target_dir)
+        self.config = load_config(config_path)
+
+        # Apply custom exclusions from config
+        cfg_excludes = self.config.get("exclude_dirs", [])
+        if isinstance(cfg_excludes, list):
+            self.ignored_parts.update(str(p) for p in cfg_excludes)
+
+        # Disable specified rules
+        disabled_rules = self.config.get("disabled_rules", [])
+        if not isinstance(disabled_rules, list):
+            disabled_rules = []
+        self.rules = [rule for rule in ALL_RULES if rule.rule_id not in disabled_rules]
+
         self.site_packages_dir = self.detect_site_packages()
 
     def detect_site_packages(self) -> Path | None:
@@ -145,7 +161,8 @@ class Scanner:
     def python_files(self):
         if self.target_dir.is_file():
             if self.target_dir.suffix == ".py":
-                yield self.target_dir
+                if "test" not in self.target_dir.stem.lower():
+                    yield self.target_dir
             return
 
         for root, dirs, files in os.walk(self.target_dir):
@@ -156,9 +173,18 @@ class Scanner:
             if any(part in self.ignored_parts for part in Path(root).parts):
                 continue
                 
+            try:
+                rel_parts = Path(root).relative_to(self.target_dir).parts
+            except ValueError:
+                rel_parts = ()
+                
+            if any("test" in part.lower() for part in rel_parts):
+                continue
+                
             for file in files:
                 if file.endswith(".py"):
-                    yield Path(root) / file
+                    if "test" not in Path(file).stem.lower():
+                        yield Path(root) / file
 
     def module_name(self, file_path: Path) -> str:
         root = self.target_dir if self.target_dir.is_dir() else file_path.parent

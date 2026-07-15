@@ -13,6 +13,9 @@ from .ssrf import SsrfRequestRule
 from .assert_check import AssertSecurityCheckRule
 from .weak_cipher import WeakCipherRule
 from .weak_random import WeakRandomGeneratorRule
+from .xxe_risk import XxeRiskRule
+from .redos_risk import RedosRiskRule
+from .jwt_security import JwtSecurityRule
 
 
 # Export list of active rule instances
@@ -30,5 +33,8 @@ ALL_RULES = [
     SsrfRequestRule(),
     AssertSecurityCheckRule(),
     WeakCipherRule(),
-    WeakRandomGeneratorRule()
+    WeakRandomGeneratorRule(),
+    XxeRiskRule(),
+    RedosRiskRule(),
+    JwtSecurityRule()
 ]

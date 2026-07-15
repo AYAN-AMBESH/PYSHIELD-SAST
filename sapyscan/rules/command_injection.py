@@ -23,8 +23,8 @@ class CommandInjectionRule(BaseRule):
                 elif isinstance(node.func, ast.Name):
                     func_name = node.func.id
 
-                # Case 1: os.system(...)
-                if module_name == "os" and func_name == "system":
+                # Case 1: os.system(...) or execute_in_shell(...)
+                if (module_name == "os" and func_name == "system") or func_name == "execute_in_shell":
                     if node.args:
                         trace = self.build_taint_trace(node.args[0])
                         if trace.tainted:
@@ -34,7 +34,7 @@ class CommandInjectionRule(BaseRule):
                             col_offset=node.col_offset,
                             file_content=file_content,
                             trace=trace,
-                            detail="Use of 'os.system()' with user-controlled input can lead to command injection."
+                            detail=f"Use of '{func_name}()' with user-controlled input can lead to command injection."
                         )
 
                 # Case 2: subprocess calls with shell=True

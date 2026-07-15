@@ -370,7 +370,7 @@ class ReportGenerator:
             font-family: 'JetBrains Mono', monospace;
         }}
 
-        .assessment-badge {
+        .assessment-badge {{
             font-size: 11px;
             font-weight: 700;
             padding: 4px 10px;
@@ -380,19 +380,19 @@ class ReportGenerator:
             background: rgba(255, 255, 255, 0.05);
             color: var(--text-secondary);
             border: 1px solid rgba(255, 255, 255, 0.08);
-        }
+        }}
 
-        .assessment-badge.confirmed {
+        .assessment-badge.confirmed {{
             background: rgba(16, 185, 129, 0.1);
             color: var(--color-info);
             border-color: rgba(16, 185, 129, 0.18);
-        }
+        }}
 
-        .assessment-badge.needs_review {
+        .assessment-badge.needs_review {{
             background: rgba(234, 179, 8, 0.1);
             color: var(--color-medium);
             border-color: rgba(234, 179, 8, 0.18);
-        }
+        }}
 
         .header-right {{
             display: flex;
@@ -432,36 +432,36 @@ class ReportGenerator:
             margin: 16px 0;
         }}
 
-        .flow-box {
+        .flow-box {{
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 10px;
             padding: 14px 16px;
             margin-bottom: 16px;
-        }
+        }}
 
-        .flow-box h5 {
+        .flow-box h5 {{
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-muted);
             margin-bottom: 10px;
-        }
+        }}
 
-        .flow-box ul {
+        .flow-box ul {{
             list-style: none;
             display: flex;
             flex-direction: column;
             gap: 8px;
-        }
+        }}
 
-        .flow-box li {
+        .flow-box li {{
             font-size: 13px;
             color: #dbe4f0;
             font-family: 'JetBrains Mono', monospace;
             line-height: 1.45;
-        }
+        }}
 
         /* Code box */
         .code-box {{

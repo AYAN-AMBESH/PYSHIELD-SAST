@@ -8,7 +8,7 @@ class SqlInjectionRule(BaseRule):
     description = "Dynamic SQL string construction using string formatting or concatenation rather than parameterized queries."
     remediation = "Always use parameterized queries/prepared statements (e.g. cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))) instead of formatting variables directly into strings."
 
-    SQL_METHODS = {"execute", "executemany"}
+    SQL_METHODS = {"execute", "executemany", "sql"}
 
     def run(self, tree: ast.AST, file_path: str, file_content: str):
         for node in ast.walk(tree):

@@ -51,7 +51,25 @@ def main() -> None:
         action="store_true"
     )
 
-    args = parser.parse_args()
+    import shlex
+
+    # Preprocess sys.argv to handle PowerShell trailing backslash escape issue on Windows
+    args_list = []
+    for arg in sys.argv[1:]:
+        if sys.platform.startswith("win") and '"' in arg and (' -' in arg or ' "' in arg):
+            parts = arg.split('"', 1)
+            path_part = parts[0] + '\\'
+            remaining = parts[1]
+            try:
+                extra_args = shlex.split(remaining)
+                args_list.append(path_part)
+                args_list.extend(extra_args)
+            except Exception:
+                args_list.append(arg)
+        else:
+            args_list.append(arg)
+
+    args = parser.parse_args(args_list)
 
     target_path = Path(args.target).resolve()
     if not target_path.exists():
@@ -65,18 +83,28 @@ def main() -> None:
     print("Scanning code modules for vulnerabilities...")
 
     scanner = Scanner(target_path, ignored_dirs=args.exclude)
-    findings = scanner.scan(parallel=args.parallel)
+
+    # Resolve settings from config, CLI overrides config
+    parallel = args.parallel
+    if not parallel and scanner.config.get("parallel") is True:
+        parallel = True
+
+    min_severity = args.min_severity
+    if min_severity == "INFO" and "min_severity" in scanner.config:
+        min_severity = scanner.config["min_severity"]
+
+    findings = scanner.scan(parallel=parallel)
 
     # Filter findings by minimum severity
-    if args.min_severity != "INFO":
+    if min_severity != "INFO":
         severity_ranks = {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
-        target_rank = severity_ranks.get(args.min_severity.upper(), 0)
+        target_rank = severity_ranks.get(min_severity.upper(), 0)
         findings = [
             f for f in findings
             if severity_ranks.get(str(f.severity).upper(), 0) >= target_rank
         ]
 
-    print(f"Scan complete. Found {len(findings)} potential vulnerability findings matching severity >= {args.min_severity}.")
+    print(f"Scan complete. Found {len(findings)} potential vulnerability findings matching severity >= {min_severity}.")
 
     # Apply autofix if requested
     if args.autofix:

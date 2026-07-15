@@ -9,7 +9,7 @@ class SsrfRequestRule(BaseRule):
     remediation = "Validate and whitelist destination URLs. Avoid constructing request destinations directly from raw user inputs."
 
     HTTP_FUNCTIONS = {"get", "post", "put", "delete", "request", "urlopen"}
-    HTTP_MODULES = {"requests", "urllib", "urllib3", "http"}
+    HTTP_MODULES = {"requests", "urllib", "urllib3", "http", "httpx", "aiohttp"}
 
     def run(self, tree: ast.AST, file_path: str, file_content: str):
         for node in ast.walk(tree):

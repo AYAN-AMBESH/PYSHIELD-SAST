@@ -70,13 +70,38 @@ def test_scanner_excludes(tmp_path: Path) -> None:
     
     ignored = tmp_path / "ignored_tests"
     ignored.mkdir()
-    (ignored / "app_test.py").write_text("eval(input())", encoding="utf-8")
+    (ignored / "app_ignored.py").write_text("eval(input())", encoding="utf-8")
     
     scanner = Scanner(tmp_path, ignored_dirs=["ignored_tests"])
     findings = scanner.scan()
     
     assert len(findings) == 1
     assert "src/app.py" in findings[0].file_path.replace("\\", "/")
+
+
+def test_scanner_excludes_test_files(tmp_path: Path) -> None:
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("eval(input())", encoding="utf-8")
+    (src / "test_app.py").write_text("eval(input())", encoding="utf-8")
+    (src / "app_test.py").write_text("eval(input())", encoding="utf-8")
+    (src / "mytestfile.py").write_text("eval(input())", encoding="utf-8")
+    (src / "TEST_file.py").write_text("eval(input())", encoding="utf-8")
+    
+    scanner = Scanner(tmp_path)
+    findings = scanner.scan()
+    
+    assert len(findings) == 1
+    assert "src/app.py" in findings[0].file_path.replace("\\", "/")
+
+
+def test_scanner_excludes_targeted_test_file(tmp_path: Path) -> None:
+    target = tmp_path / "test_app.py"
+    target.write_text("eval(input())", encoding="utf-8")
+    
+    scanner = Scanner(target)
+    findings = scanner.scan()
+    assert len(findings) == 0
 
 
 def test_scanner_suppressions(tmp_path: Path) -> None:
@@ -141,6 +166,130 @@ def run(cursor, username):
     # Verify file content is parameterized
     fixed_content = target.read_text(encoding="utf-8")
     assert "cursor.execute('SELECT * FROM users WHERE name = %s', (username,))" in fixed_content
+
+
+def test_scanner_config_file(tmp_path: Path) -> None:
+    # Create target directory
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("eval(input())", encoding="utf-8") # debug rule
+    (src / "ignored_subdir").mkdir()
+    (src / "ignored_subdir" / "other.py").write_text("eval(input())", encoding="utf-8")
+    
+    # Write .sapyscan.json config
+    import json
+    cfg = {
+        "disabled_rules": ["OWASP_A03_2021_EVAL"],
+        "exclude_dirs": ["ignored_subdir"]
+    }
+    (tmp_path / ".sapyscan.json").write_text(json.dumps(cfg), encoding="utf-8")
+    
+    scanner = Scanner(tmp_path)
+    # The scan should load the config and not find anything because EVAL rule is disabled
+    findings = scanner.scan()
+    assert len(findings) == 0
+    assert "ignored_subdir" in scanner.ignored_parts
+
+
+def test_xxe_risk_rule(tmp_path: Path) -> None:
+    target = tmp_path / "app.py"
+    target.write_text(
+        """
+from lxml import etree
+
+# Unsafe XXE
+parser1 = etree.XMLParser()
+parser2 = etree.XMLParser(resolve_entities=True)
+
+# Safe XXE
+parser3 = etree.XMLParser(resolve_entities=False)
+""",
+        encoding="utf-8"
+    )
+    findings = Scanner(target).scan()
+    assert len(findings) == 2
+    for vuln in findings:
+        assert vuln.rule_id == "OWASP_A05_2021_XXE"
+    lines = [f.line_no for f in findings]
+    assert 5 in lines
+    assert 6 in lines
+    assert 9 not in lines
+
+
+def test_redos_risk_rule(tmp_path: Path) -> None:
+    target = tmp_path / "app.py"
+    target.write_text(
+        """
+import re
+
+# Unsafe ReDoS
+re.compile(r"(a+)+")
+re.compile(r"([a-zA-Z]+)*")
+re.search(r"(a|b+)+", "string")
+
+# Safe Regex
+re.compile(r"[a-z]+")
+""",
+        encoding="utf-8"
+    )
+    findings = Scanner(target).scan()
+    assert len(findings) == 3
+    for vuln in findings:
+        assert vuln.rule_id == "OWASP_A05_2021_REDOS"
+    lines = [f.line_no for f in findings]
+    assert 5 in lines
+    assert 6 in lines
+    assert 7 in lines
+    assert 10 not in lines
+
+
+def test_jwt_security_rule(tmp_path: Path) -> None:
+    target = tmp_path / "app.py"
+    target.write_text(
+        """
+import jwt
+
+# Insecure JWT
+jwt.decode(token, verify=False)
+jwt.decode(token, options={"verify_signature": False})
+jwt.decode(token, algorithms=["none"])
+jwt.decode(token, algorithms=["HS256", "none"])
+
+# Secure JWT
+jwt.decode(token, verify=True, algorithms=["HS256"])
+jwt.decode(token, options={"verify_signature": True}, algorithms=["HS256"])
+""",
+        encoding="utf-8"
+    )
+    findings = Scanner(target).scan()
+    assert len(findings) == 4
+    for vuln in findings:
+        assert vuln.rule_id == "OWASP_A02_2021_JWT"
+    lines = [f.line_no for f in findings]
+    assert 5 in lines
+    assert 6 in lines
+    assert 7 in lines
+    assert 8 in lines
+    assert 11 not in lines
+    assert 12 not in lines
+
+
+def test_scanner_excludes_files_in_test_folders(tmp_path: Path) -> None:
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("eval(input())", encoding="utf-8")
+    
+    # Create a subfolder with 'test' in its name containing a file that doesn't have 'test' in its name
+    test_utils = src / "test_utils"
+    test_utils.mkdir()
+    (test_utils / "tmpdir.py").write_text("eval(input())", encoding="utf-8")
+    
+    scanner = Scanner(tmp_path)
+    findings = scanner.scan()
+    
+    # Only the vulnerability in src/app.py should be detected, cms/test_utils/tmpdir.py should be excluded
+    assert len(findings) == 1
+    assert "src/app.py" in findings[0].file_path.replace("\\", "/")
 
 
 

@@ -4,15 +4,18 @@ SaPyScan is a static analysis tool that parses Python source code into an Abstra
 
 ## Features
 
-- **AST-Based Vulnerability Scanning**: Tracks user-controlled values through local assignments, scanned-module imports, and instance methods before reporting an injection sink.
+- **AST-Based Vulnerability Scanning**: Tracks user-controlled values through local assignments, scanned-module imports, relative imports, and instance/parameter method calls before reporting an injection sink.
 - **Sanitizer & Escaper Detection**: Automatically stops taint propagation through standard escaping/sanitization functions (like `html.escape()`, `shlex.quote()`, `int()`, `float()`), significantly reducing false positives.
 - **High-Performance Scaling**: Optimized AST traversing with cached parent-node mapping and call graphs. Supports multiprocessing for scanning massive codebases in seconds.
+- **Configuration File Support**: Automatically resolves a `.sapyscan.json` configuration file to customize directory exclusions, rule overrides, and default settings.
+- **Test File Exclusion**: Automatically ignores Python test files (any file containing `test` in its name) to prevent noisy/false findings.
 - **Security Rule Coverage**:
   - Hardcoded secrets and credentials
   - Weak cryptographic hashes and ciphers
   - Command injection, SQL injection, and XSS risk patterns
   - Insecure deserialization and SSL/TLS misconfiguration
   - SSRF risk, path traversal risk, weak random usage, and dangerous eval usage
+  - Insecure JWT verification, Regular Expression DoS (ReDoS) risk, and XML External Entity (XXE) vulnerability patterns
 - **Interactive Report Dashboard**: Generates a responsive, CSS-styled HTML dashboard displaying statistics, code snippets, location mapping, and remediation steps.
 
 ## Installation
@@ -63,6 +66,22 @@ sapyscan my_big_project --sarif report.sarif
 sapyscan my_big_project --autofix
 ```
 
+### Configuration File (`.sapyscan.json`)
+
+SaPyScan automatically searches up the directory tree (up to 5 levels) for a `.sapyscan.json` configuration file. This allows settings to be committed to the repository and shared.
+
+Example `.sapyscan.json`:
+```json
+{
+  "disabled_rules": ["OWASP_A03_2021_EVAL"],
+  "exclude_dirs": ["ignored_subdir", "venv", ".git"],
+  "min_severity": "MEDIUM",
+  "parallel": true
+}
+```
+
+*Note: Command-line arguments (e.g., `--exclude`, `--min-severity`, `--parallel`) will override the options defined in the configuration file.*
+
 ### Inline Suppression
 
 You can ignore specific vulnerability findings on a per-line basis using code comments:
@@ -80,6 +99,7 @@ query = f"SELECT * FROM users WHERE id = '{user_id}'" # sapyscan: ignore OWASP_A
 ## Project Structure
 - `sapyscan/`: Main package
   - `cli.py`: CLI entry point and argument parsing
+  - `config.py`: Configuration resolution and loading
   - `scanner.py`: File traversal and AST parsing engine
   - `reporter.py`: HTML report rendering
   - `rules/`: Security rule implementations
@@ -97,5 +117,8 @@ query = f"SELECT * FROM users WHERE id = '{user_id}'" # sapyscan: ignore OWASP_A
     - `weak_random.py`
     - `assert_check.py`
     - `flask_debug.py`
+    - `jwt_security.py`
+    - `redos_risk.py`
+    - `xxe_risk.py`
 - `tests/`: Unit tests and vulnerable sample application
 - `pyproject.toml`: Project metadata and console script configuration

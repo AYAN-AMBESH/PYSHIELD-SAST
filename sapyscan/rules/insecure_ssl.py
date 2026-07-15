@@ -26,35 +26,37 @@ class InsecureSslTlsRule(BaseRule):
                     func_name = node.func.id
 
                 # Case 1: requests.get/post/request(..., verify=False)
-                for kw in node.keywords:
-                    if kw.arg == "verify":
-                        resolved = self.resolve_node_value(kw.value)
-                        if isinstance(resolved, ast.Constant) and resolved.value is False:
-                            self.add_vuln(
-                                file_path=file_path,
-                                line_no=node.lineno,
-                                col_offset=node.col_offset,
-                                file_content=file_content,
-                                detail="SSL certificate verification is explicitly disabled (verify=False)."
-                            )
-                    elif kw.arg == "cert_reqs":
-                        resolved = self.resolve_node_value(kw.value)
-                        if isinstance(resolved, ast.Attribute) and resolved.attr == "CERT_NONE":
-                            self.add_vuln(
-                                file_path=file_path,
-                                line_no=node.lineno,
-                                col_offset=node.col_offset,
-                                file_content=file_content,
-                                detail="SSL certificate requirements are set to CERT_NONE, disabling verification."
-                            )
-                        elif isinstance(resolved, ast.Name) and resolved.id == "CERT_NONE":
-                            self.add_vuln(
-                                file_path=file_path,
-                                line_no=node.lineno,
-                                col_offset=node.col_offset,
-                                file_content=file_content,
-                                detail="SSL certificate requirements are set to CERT_NONE, disabling verification."
-                            )
+                # Exclude jwt.decode calls from SSL verification warnings
+                if not (module_name == "jwt" and func_name == "decode"):
+                    for kw in node.keywords:
+                        if kw.arg == "verify":
+                            resolved = self.resolve_node_value(kw.value)
+                            if isinstance(resolved, ast.Constant) and resolved.value is False:
+                                self.add_vuln(
+                                    file_path=file_path,
+                                    line_no=node.lineno,
+                                    col_offset=node.col_offset,
+                                    file_content=file_content,
+                                    detail="SSL certificate verification is explicitly disabled (verify=False)."
+                                )
+                        elif kw.arg == "cert_reqs":
+                            resolved = self.resolve_node_value(kw.value)
+                            if isinstance(resolved, ast.Attribute) and resolved.attr == "CERT_NONE":
+                                self.add_vuln(
+                                    file_path=file_path,
+                                    line_no=node.lineno,
+                                    col_offset=node.col_offset,
+                                    file_content=file_content,
+                                    detail="SSL certificate requirements are set to CERT_NONE, disabling verification."
+                                )
+                            elif isinstance(resolved, ast.Name) and resolved.id == "CERT_NONE":
+                                self.add_vuln(
+                                    file_path=file_path,
+                                    line_no=node.lineno,
+                                    col_offset=node.col_offset,
+                                    file_content=file_content,
+                                    detail="SSL certificate requirements are set to CERT_NONE, disabling verification."
+                                )
 
             # Case 2: Attribute access to weak protocols, e.g. ssl.PROTOCOL_SSLv2
             elif isinstance(node, ast.Attribute):
